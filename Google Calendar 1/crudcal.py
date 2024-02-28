@@ -36,8 +36,9 @@ def create_event(service):
         'summary': 'Example Event',
         'location': 'India',
         'description': 'This is sample description',
-        'start': {'dateTime': '2024-02-23T09:00:00', 'timeZone': 'Asia/Kolkata'},
-        'end': {'dateTime': '2024-02-23T10:00:00', 'timeZone': 'Asia/Kolkata'},
+        'start': {'dateTime': '2024-02-29T09:00:00', 'timeZone': 'Asia/Kolkata'},
+        'end': {'dateTime': '2024-02-29T10:00:00', 'timeZone': 'Asia/Kolkata'},
+        'attendees': [{'email': 'thearbazkhan05@gmail.com'}]  # Specify the attendee's email
     }
 
     # Create the event
@@ -48,7 +49,7 @@ def create_event(service):
     
     return event_id
 
-def update_event(service, event_id, summary=None, location=None, description=None, start_time=None, end_time=None):
+def update_event(service, event_id, summary=None, location=None, description=None, start_time=None, end_time=None, invitee_email=None):
     event = service.events().get(calendarId='primary', eventId=event_id).execute()
 
     if summary:
@@ -61,19 +62,14 @@ def update_event(service, event_id, summary=None, location=None, description=Non
         event['start']['dateTime'] = start_time
     if end_time:
         event['end']['dateTime'] = end_time
+    if invitee_email:
+        event['attendees']['email'] = invitee_email
 
     try:
         updated_event = service.events().update(calendarId='primary', eventId=event_id, body=event).execute()
         print('Event updated: %s' % (updated_event.get('htmlLink')))
     except Exception as e:
         print('Error updating event:', e)
-
-def cancel_event(service, event_id):
-    try:
-        service.events().delete(calendarId='primary', eventId=event_id).execute()
-        print('Event canceled successfully.')
-    except Exception as e:
-        print('Error canceling event:', e)
 
 def delete_event(service, event_id):
     try:
@@ -92,8 +88,7 @@ if __name__ == '__main__':
 
     # Updating Event
     update_event(service, f'{event_id}', summary='Updated Meeting')
-    # Cancel Event
-    # cancel_event(service, f'{event_id}')
+    # update_event(service, 'rconu1lr6dcp3ufuguq310jfhc', summary='Updated Meeting')
     # Delete Event
-    # delete_event(service, f'{event_id}')
-    # delete_event(service, 'ngcct4ruqcs11jl4mmknq3md8s')
+    delete_event(service, f'{event_id}')
+    # delete_event(service, 'rconu1lr6dcp3ufuguq310jfhc')
