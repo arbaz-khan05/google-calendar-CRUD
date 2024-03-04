@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Organizer List</title>
+    <style>
+        /* CSS styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <h1>Event Organizer List</h1>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Age</th>
+            <th>Club Address</th>
+            <th>City</th>
+            <th>Country</th>
+            <th>Profile Line</th>
+            <th>Image Address</th>
+        </tr>
+        {% for organizer in organizers %}
+            <tr>
+                <td>{{ organizer.name }}</td>
+                <td>{{ organizer.email }}</td>
+                <td>{{ organizer.age }}</td>
+                <td>{{ organizer.club_address }}</td>
+                <td>{{ organizer.city }}</td>
+                <td>{{ organizer.country }}</td>
+                <td>{{ organizer.profileline }}</td>
+                <td>{{ organizer.image_address }}</td>
+            </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>

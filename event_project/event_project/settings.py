@@ -86,7 +86,7 @@ WSGI_APPLICATION = 'event_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'event',
+        'NAME': 'band',
         'USER': 'root',
         'PASSWORD': '',
         'HOST': 'localhost',

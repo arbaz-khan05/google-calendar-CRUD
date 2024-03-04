@@ -16,3 +16,35 @@ class Event(models.Model):
     
     def __str__(self):
         return self.event_name
+    
+
+from django.db import models
+
+class Musician(models.Model):
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    age = models.PositiveIntegerField()
+    musician_category = models.CharField(max_length=100)
+    address = models.CharField(max_length=200)
+    city = models.CharField(max_length=100)
+    country = models.CharField(max_length=100)
+    ratings = models.FloatField()
+    profileline = models.CharField(max_length=200)
+    image_address = models.URLField()
+
+    def __str__(self):
+        return self.name
+
+class EventOrganizer(models.Model):
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    age = models.PositiveIntegerField()
+    club_address = models.CharField(max_length=200)
+    city = models.CharField(max_length=100)
+    country = models.CharField(max_length=100)
+    profileline = models.CharField(max_length=200)
+    image_address = models.URLField()
+
+    def __str__(self):
+        return self.name
+
