@@ -5,14 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event Organizer List</title>
     <style>
-        /* CSS styles */
+        /* Add your CSS styles here */
+        /* Example styles */
+        body {
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20px;
         }
         th, td {
             padding: 8px;
-            text-align: left;
+            text-align: center;
             border-bottom: 1px solid #ddd;
         }
         tr:hover {
@@ -21,30 +30,32 @@
     </style>
 </head>
 <body>
-    <h1>Event Organizer List</h1>
-    <table>
-        <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Age</th>
-            <th>Club Address</th>
-            <th>City</th>
-            <th>Country</th>
-            <th>Profile Line</th>
-            <th>Image Address</th>
-        </tr>
-        {% for organizer in organizers %}
+        <h1>Event Organizer List</h1>
+        <table>
             <tr>
-                <td>{{ organizer.name }}</td>
-                <td>{{ organizer.email }}</td>
-                <td>{{ organizer.age }}</td>
-                <td>{{ organizer.club_address }}</td>
-                <td>{{ organizer.city }}</td>
-                <td>{{ organizer.country }}</td>
-                <td>{{ organizer.profileline }}</td>
-                <td>{{ organizer.image_address }}</td>
+                <th>Organizer ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Age</th>
+                <th>Club Address</th>
+                <th>City</th>
+                <th>Country</th>
+                <th>Profile Line</th>
+                <th>Image Address</th>
             </tr>
-        {% endfor %}
-    </table>
+            {% for organizer in event_organizers %}
+                <tr>
+                    <td>{{ organizer.eventorganizer_id }}</td>
+                    <td>{{ organizer.name }}</td>
+                    <td>{{ organizer.email }}</td>
+                    <td>{{ organizer.age }}</td>
+                    <td>{{ organizer.club_address }}</td>
+                    <td>{{ organizer.city }}</td>
+                    <td>{{ organizer.country }}</td>
+                    <td>{{ organizer.profileline }}</td>
+                    <td><img src="{{ organizer.image_address }}" alt="{{ organizer.name }}" style="max-width: 100px;"></td>
+                </tr>
+            {% endfor %}
+        </table>
 </body>
 </html>

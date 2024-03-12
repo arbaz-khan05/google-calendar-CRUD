@@ -1,24 +1,32 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views.generic import CreateView, UpdateView, DeleteView , ListView
+from django.shortcuts import render, get_object_or_404
+from django.views.generic import CreateView, UpdateView, DeleteView, ListView
 from django.urls import reverse_lazy
 from django.contrib import messages
 from rest_framework import generics, status
 from rest_framework.response import Response
-from .serializers import EventSerializer, MusicianSerializer, EventOrganizerSerializer
-from .models import Event , Musician, EventOrganizer
-from .forms import EventForm ,MusicianForm, EventOrganizerForm
+from rest_framework.decorators import api_view
+from .serializers import EventSerializer, MusicianSerializer, EventOrganizerSerializer, UserCredentialsSerializer
+from .models import Event, Musician, EventOrganizer, UserCredentials
+from .forms import EventForm, MusicianForm, EventOrganizerForm
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 import pickle
 import os.path
+import uuid
+from rest_framework.views import APIView
 
+SCOPES = ['https://www.googleapis.com/auth/calendar']
 
-
-class EventListCreate(generics.ListCreateAPIView):
+class EventListCreateAPIView(generics.ListCreateAPIView):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
+
+    def get(self, request, *args, **kwargs):
+        events = self.get_queryset()
+        serializer = self.get_serializer(events, many=True)
+        return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -27,9 +35,14 @@ class EventListCreate(generics.ListCreateAPIView):
             return Response({"message": "Event created successfully"}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class EventRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+class EventRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
+
+    def get(self, request, *args, **kwargs):
+        event = self.get_object()
+        serializer = self.get_serializer(event)
+        return Response(serializer.data)
 
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -39,6 +52,11 @@ class EventRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
 class MusicianListCreateAPIView(generics.ListCreateAPIView):
     queryset = Musician.objects.all()
     serializer_class = MusicianSerializer
+
+    def get(self, request, *args, **kwargs):
+        musicians = self.get_queryset()
+        serializer = self.get_serializer(musicians, many=True)
+        return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -51,6 +69,11 @@ class MusicianRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
     queryset = Musician.objects.all()
     serializer_class = MusicianSerializer
 
+    def get(self, request, *args, **kwargs):
+        musician = self.get_object()
+        serializer = self.get_serializer(musician)
+        return Response(serializer.data)
+
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -61,6 +84,11 @@ class MusicianRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView
 class EventOrganizerListCreateAPIView(generics.ListCreateAPIView):
     queryset = EventOrganizer.objects.all()
     serializer_class = EventOrganizerSerializer
+
+    def get(self, request, *args, **kwargs):
+        event_organizers = self.get_queryset()
+        serializer = self.get_serializer(event_organizers, many=True)
+        return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -73,6 +101,11 @@ class EventOrganizerRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyA
     queryset = EventOrganizer.objects.all()
     serializer_class = EventOrganizerSerializer
 
+    def get(self, request, *args, **kwargs):
+        event_organizer = self.get_object()
+        serializer = self.get_serializer(event_organizer)
+        return Response(serializer.data)
+
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -80,27 +113,37 @@ class EventOrganizerRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyA
             return Response({"message": "Event Organizer created successfully"}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-SCOPES = ['https://www.googleapis.com/auth/calendar']
-
 def authenticate():
     creds = None
     if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
+        try:
+            with open('token.pickle', 'rb') as token:
+                creds = pickle.load(token)
+        except Exception as e:
+            print(f"Error loading credentials: {e}")
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+            try:
+                creds.refresh(Request())
+            except Exception as e:
+                print(f"Error refreshing token: {e}")
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'eventapp/credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
+            try:
+                flow = InstalledAppFlow.from_client_secrets_file('eventapp/credentials.json', SCOPES)
+                creds = flow.run_local_server(port=0)
+            except Exception as e:
+                print(f"Error running local server: {e}")
+            else:
+                with open('token.pickle', 'wb') as token:
+                    pickle.dump(creds, token)
     return creds
 
 def create_google_service():
     creds = authenticate()
     return build('calendar', 'v3', credentials=creds)
+
+def generate_unique_google_event_id():
+    return str(uuid.uuid4())
 
 def create_event(service, event):
     event_data = {
@@ -109,7 +152,6 @@ def create_event(service, event):
         'description': event.description,
         'start': {'dateTime': event.event_start_date.isoformat(), 'timeZone': 'Asia/Kolkata'},
         'end': {'dateTime': event.event_end_date.isoformat(), 'timeZone': 'Asia/Kolkata'},
-        'attendees': [{'email': email} for email in event.attendees_gmail.split(',')]
     }
     created_event = service.events().insert(calendarId='primary', body=event_data).execute()
     event_id = created_event['id']
@@ -122,22 +164,16 @@ def update_event(service, event_id, event):
         'description': event.description,
         'start': {'dateTime': event.event_start_date.isoformat(), 'timeZone': 'Asia/Kolkata'},
         'end': {'dateTime': event.event_end_date.isoformat(), 'timeZone': 'Asia/Kolkata'},
-        'attendees': [{'email': email} for email in event.attendees_gmail.split(',')]
     }
     service.events().update(calendarId='primary', eventId=event_id, body=event_data).execute()
 
 def delete_event(service, event_id):
     service.events().delete(calendarId='primary', eventId=event_id).execute()
 
-
-def event_detail(request, pk):
-    event = get_object_or_404(Event, pk=pk)
-    return render(request, 'event_detail.html', {'event': event})
-
 class EventListView(ListView):
     model = Event
-    template_name = 'event_list.html' 
-    context_object_name = 'events'  
+    template_name = 'event_list.html'
+    context_object_name = 'events'
 
 class EventCreateView(CreateView):
     model = Event
@@ -146,11 +182,17 @@ class EventCreateView(CreateView):
     success_url = reverse_lazy('event_list')
 
     def form_valid(self, form):
-        event = form.save()
-        service = create_google_service()
-        event_id = create_event(service, event)
-        event.google_event_id = event_id
+        event = form.save(commit=False)
+        # Check if the generated google_event_id already exists
+        while True:
+            google_event_id = generate_unique_google_event_id()
+            if not Event.objects.filter(google_event_id=google_event_id).exists():
+                event.google_event_id = google_event_id
+                break
         event.save()
+        # Create event in Google Calendar
+        service = create_google_service()
+        create_event(service, event)
         messages.success(self.request, 'Event created successfully.')
         return super().form_valid(form)
 
@@ -169,7 +211,7 @@ class EventUpdateView(UpdateView):
 
 class EventDeleteView(DeleteView):
     model = Event
-    template_name = 'event_confirm_delete.html'
+    template_name = 'event_delete.html'
     success_url = reverse_lazy('event_list')
 
     def delete(self, request, *args, **kwargs):
@@ -179,8 +221,13 @@ class EventDeleteView(DeleteView):
         messages.success(request, 'Event deleted successfully.')
         return super().delete(request, *args, **kwargs)
 
+def event_detail(request, pk):
+    event = get_object_or_404(Event, pk=pk)
+    return render(request, 'event_detail.html', {'event': event})
 
- # Musician Views
+
+# Musician Views
+
 class MusicianListView(ListView):
     model = Musician
     template_name = 'musician_list.html'
@@ -191,7 +238,7 @@ class MusicianCreateView(CreateView):
     form_class = MusicianForm
     template_name = 'musician_form.html'
     success_url = reverse_lazy('musician_list')
-
+    
 class MusicianUpdateView(UpdateView):
     model = Musician
     form_class = MusicianForm
@@ -200,9 +247,15 @@ class MusicianUpdateView(UpdateView):
 
 class MusicianDeleteView(DeleteView):
     model = Musician
+    template_name = 'musician_delete.html'
     success_url = reverse_lazy('musician_list')
 
- # Event Organizer Views
+class MusicianList(generics.ListAPIView):
+    queryset = Musician.objects.all()
+    serializer_class = MusicianSerializer
+
+# Event Organizer Views
+
 class EventOrganizerListView(ListView):
     model = EventOrganizer
     template_name = 'event_organizer_list.html'
@@ -222,6 +275,72 @@ class EventOrganizerUpdateView(UpdateView):
 
 class EventOrganizerDeleteView(DeleteView):
     model = EventOrganizer
+    template_name = 'event_organizer_delete.html'
     success_url = reverse_lazy('event_organizer_list')
 
+class EventOrganizerList(generics.ListAPIView):
+    queryset = EventOrganizer.objects.all()
+    serializer_class = EventOrganizerSerializer
 
+class UserCredentialsCreateView(generics.CreateAPIView):
+    serializer_class = UserCredentialsSerializer
+
+    def create(self, request, *args, **kwargs):
+        category = request.data.get('category')
+        email = request.data.get('email')
+
+        if category not in ['musician', 'event organizer']:
+            return Response({'error': 'Invalid category specified.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            if category == 'musician':
+                musician = Musician.objects.get(email=email)
+                email = musician.email
+            elif category == 'event organizer':
+                event_organizer = EventOrganizer.objects.get(email=email)
+                email = event_organizer.email
+        except (Musician.DoesNotExist, EventOrganizer.DoesNotExist):
+            return Response({'error': f'{category.capitalize()} with provided email not found.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user_credentials_serializer = self.get_serializer(data=request.data)
+        if user_credentials_serializer.is_valid():
+            user_credentials_serializer.save(email=email, category=category)
+            return Response({'user_credentials': user_credentials_serializer.data}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({'error': 'Invalid data for user credentials.'}, status=status.HTTP_400_BAD_REQUEST)
+
+# Login API 
+        
+class UserLoginAPIView(APIView):
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        try:
+            user_credentials = UserCredentials.objects.get(email=email)
+            if user_credentials.password == password:
+                # Password matches, authentication successful
+                if user_credentials.category == 'musician':
+                    try:
+                        musician = Musician.objects.get(email=email)
+                        serializer = MusicianSerializer(musician)
+                        data = serializer.data
+                        data['category'] = 'musician'
+                        return Response(data, status=status.HTTP_200_OK)
+                    except Musician.DoesNotExist:
+                        return Response({'error': 'Musician not found'}, status=status.HTTP_404_NOT_FOUND)
+                elif user_credentials.category == 'event organizer':
+                    try:
+                        event_organizer = EventOrganizer.objects.get(email=email)
+                        serializer = EventOrganizerSerializer(event_organizer)
+                        data = serializer.data
+                        data['category'] = 'event organizer'
+                        return Response(data, status=status.HTTP_200_OK)
+                    except EventOrganizer.DoesNotExist:
+                        return Response({'error': 'Event Organizer not found'}, status=status.HTTP_404_NOT_FOUND)
+            else:
+                # Password doesn't match
+                return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        except UserCredentials.DoesNotExist:
+            # User not found
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)

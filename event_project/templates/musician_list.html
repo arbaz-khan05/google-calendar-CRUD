@@ -5,10 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Musician List</title>
     <style>
-        /* CSS styles */
+        /* Add your CSS styles here */
+        /* Example styles */
+        body {
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            color: #333;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20px;
         }
         th, td {
             padding: 8px;
@@ -23,20 +31,25 @@
 <body>
     <h1>Musician List</h1>
     <table>
-        <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Age</th>
-            <th>Musician Category</th>
-            <th>Address</th>
-            <th>City</th>
-            <th>Country</th>
-            <th>Ratings</th>
-            <th>Profile Line</th>
-            <th>Image Address</th>
-        </tr>
-        {% for musician in musicians %}
+        <thead>
             <tr>
+                <th>Id</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Age</th>
+                <th>Category</th>
+                <th>Address</th>
+                <th>City</th>
+                <th>Country</th>
+                <th>Ratings</th>
+                <th>Profile Line</th>
+                <th>Image</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for musician in musicians %}
+            <tr>
+                <td>{{ musician.musician_id }}</td>
                 <td>{{ musician.name }}</td>
                 <td>{{ musician.email }}</td>
                 <td>{{ musician.age }}</td>
@@ -46,9 +59,10 @@
                 <td>{{ musician.country }}</td>
                 <td>{{ musician.ratings }}</td>
                 <td>{{ musician.profileline }}</td>
-                <td>{{ musician.image_address }}</td>
+                <td><img src="{{ musician.image_address }}" alt="{{ musician.name }}" style="max-width: 100px;"></td>
             </tr>
-        {% endfor %}
+            {% endfor %}
+        </tbody>
     </table>
 </body>
 </html>

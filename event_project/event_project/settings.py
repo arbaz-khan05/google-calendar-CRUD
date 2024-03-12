@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-)ku3o-xvy-!l2(8_kb0+%_^v&k^4csa+26k9zhby$5=#z27rn8'
+SECRET_KEY = 'django-insecure-5@106#vb9ze3$mm(vp&obs6)87agv(#^c5k_&m06-1azjbtk8h'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -52,7 +52,6 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'event_project.urls'
-
 import os
 TEMPLATES = [
     {
@@ -82,17 +81,17 @@ WSGI_APPLICATION = 'event_project.wsgi.application'
 #         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'band',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': 'band',  
+        'USER': 'root', 
+        'PASSWORD': 'Arbaz@12345',  
+        'HOST': 'localhost',  
+        'PORT': '3306',  
     }
 }
+
 
 
 # Password validation
@@ -135,3 +134,4 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+

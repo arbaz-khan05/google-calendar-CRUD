@@ -32,7 +32,6 @@
             <th>Form Filling Date</th>
             <th>Event Start Date</th>
             <th>Event End Date</th>
-            <th>Attendees Gmail</th>
             <th>Organiser Email</th>
             <th>Organiser Name</th>
         </tr>
@@ -43,12 +42,12 @@
     <td>{{ event.location }}</td>
     <td>{{ event.description }}</td>
     
-    <!-- Ensure datetime fields are formatted properly -->
-    <td>{{ event.form_filling_date|date:"Y-m-d H:i:s" }}</td>
-    <td>{{ event.event_start_date|date:"Y-m-d H:i:s" }}</td>
-    <td>{{ event.event_end_date|date:"Y-m-d H:i:s" }}</td>
+    <!-- Ensure datetime fields are formatted properly Changed date format -->
+    <td>{{ event.created_on|date:"d-m-Y H:i:s" }}</td>
+    <td>{{ event.event_start_date|date:"d-m-Y H:i:s" }}</td>
+    <td>{{ event.event_end_date|date:"d-m-Y H:i:s" }}</td>
     
-    <td>{{ event.attendees_gmail }}</td>
+    
     <td>{{ event.event_organiser_email }}</td>
     <td>{{ event.event_organiser_name }}</td>
 </tr>
