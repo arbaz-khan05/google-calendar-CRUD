@@ -12,10 +12,12 @@ from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from rest_framework.generics import ListCreateAPIView
 import pickle
 import os.path
 import uuid
 from rest_framework.views import APIView
+
 
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
@@ -53,18 +55,21 @@ class MusicianListCreateAPIView(generics.ListCreateAPIView):
     queryset = Musician.objects.all()
     serializer_class = MusicianSerializer
 
-    def get(self, request, *args, **kwargs):
-        musicians = self.get_queryset()
-        serializer = self.get_serializer(musicians, many=True)
-        return Response(serializer.data)
-
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Musician created successfully"}, status=status.HTTP_201_CREATED)
+            email = serializer.validated_data['email']
+            try:
+                user_credential = UserCredentials.objects.get(email=email)
+                if user_credential.category == 'musician':
+                    serializer.save()
+                    return Response({"message": "Musician created successfully"}, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({"error": "Incorrect category"}, status=status.HTTP_400_BAD_REQUEST)
+            except UserCredentials.DoesNotExist:
+                return Response({"error": "Email not found"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
 class MusicianRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Musician.objects.all()
     serializer_class = MusicianSerializer
@@ -85,16 +90,19 @@ class EventOrganizerListCreateAPIView(generics.ListCreateAPIView):
     queryset = EventOrganizer.objects.all()
     serializer_class = EventOrganizerSerializer
 
-    def get(self, request, *args, **kwargs):
-        event_organizers = self.get_queryset()
-        serializer = self.get_serializer(event_organizers, many=True)
-        return Response(serializer.data)
-
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Event Organizer created successfully"}, status=status.HTTP_201_CREATED)
+            email = serializer.validated_data['email']
+            try:
+                user_credential = UserCredentials.objects.get(email=email)
+                if user_credential.category == 'event organizer':
+                    serializer.save()
+                    return Response({"message": "Event Organizer created successfully"}, status=status.HTTP_201_CREATED)
+                else:
+                    return Response({"error": "Incorrect category"}, status=status.HTTP_400_BAD_REQUEST)
+            except UserCredentials.DoesNotExist:
+                return Response({"error": "Email not found"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class EventOrganizerRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
@@ -282,6 +290,9 @@ class EventOrganizerList(generics.ListAPIView):
     queryset = EventOrganizer.objects.all()
     serializer_class = EventOrganizerSerializer
 
+
+# User Credentials 
+    
 class UserCredentialsCreateView(generics.CreateAPIView):
     serializer_class = UserCredentialsSerializer
 
@@ -289,28 +300,24 @@ class UserCredentialsCreateView(generics.CreateAPIView):
         category = request.data.get('category')
         email = request.data.get('email')
 
+        # Check if the category is valid
         if category not in ['musician', 'event organizer']:
             return Response({'error': 'Invalid category specified.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            if category == 'musician':
-                musician = Musician.objects.get(email=email)
-                email = musician.email
-            elif category == 'event organizer':
-                event_organizer = EventOrganizer.objects.get(email=email)
-                email = event_organizer.email
-        except (Musician.DoesNotExist, EventOrganizer.DoesNotExist):
-            return Response({'error': f'{category.capitalize()} with provided email not found.'}, status=status.HTTP_400_BAD_REQUEST)
-
+        # If the email exists for the specified category, proceed with creating user credentials
         user_credentials_serializer = self.get_serializer(data=request.data)
         if user_credentials_serializer.is_valid():
-            user_credentials_serializer.save(email=email, category=category)
+            # Add the email and category to the serializer data before saving
+            user_credentials_serializer.validated_data['email'] = email
+            user_credentials_serializer.validated_data['category'] = category
+            user_credentials_serializer.save()
             return Response({'user_credentials': user_credentials_serializer.data}, status=status.HTTP_201_CREATED)
         else:
             return Response({'error': 'Invalid data for user credentials.'}, status=status.HTTP_400_BAD_REQUEST)
 
+
 # Login API 
-        
+
 class UserLoginAPIView(APIView):
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
@@ -325,12 +332,12 @@ class UserLoginAPIView(APIView):
                         musician = Musician.objects.get(email=email)
                         serializer = MusicianSerializer(musician)
                         return Response({
-                            'memberType': 'Musician',
+                            'memberType': 'musician',
                             'details': serializer.data
                         }, status=status.HTTP_200_OK)
                     except Musician.DoesNotExist:
                         return Response({'error': 'Musician not found'}, status=status.HTTP_404_NOT_FOUND)
-                elif user_credentials.category == 'event organizer':
+                elif user_credentials.category == 'event_organizer':
                     try:
                         event_organizer = EventOrganizer.objects.get(email=email)
                         serializer = EventOrganizerSerializer(event_organizer)
