@@ -324,18 +324,20 @@ class UserLoginAPIView(APIView):
                     try:
                         musician = Musician.objects.get(email=email)
                         serializer = MusicianSerializer(musician)
-                        data = serializer.data
-                        data['category'] = 'musician'
-                        return Response(data, status=status.HTTP_200_OK)
+                        return Response({
+                            'memberType': 'Musician',
+                            'details': serializer.data
+                        }, status=status.HTTP_200_OK)
                     except Musician.DoesNotExist:
                         return Response({'error': 'Musician not found'}, status=status.HTTP_404_NOT_FOUND)
                 elif user_credentials.category == 'event organizer':
                     try:
                         event_organizer = EventOrganizer.objects.get(email=email)
                         serializer = EventOrganizerSerializer(event_organizer)
-                        data = serializer.data
-                        data['category'] = 'event organizer'
-                        return Response(data, status=status.HTTP_200_OK)
+                        return Response({
+                            'memberType': 'event organizer',
+                            'details': serializer.data
+                        }, status=status.HTTP_200_OK)
                     except EventOrganizer.DoesNotExist:
                         return Response({'error': 'Event Organizer not found'}, status=status.HTTP_404_NOT_FOUND)
             else:
