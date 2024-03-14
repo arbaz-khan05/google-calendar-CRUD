@@ -22,7 +22,6 @@ class EventOrganizerForm(forms.ModelForm):
         model = EventOrganizer
         fields = '__all__'
 
-#forms.py
 class UserCredentialsForm(forms.ModelForm):
     class Meta:
         model = UserCredentials
