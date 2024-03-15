@@ -1,24 +1,17 @@
-from django.shortcuts import render, get_object_or_404
-from django.views.generic import CreateView, UpdateView, DeleteView, ListView
-from django.urls import reverse_lazy
-from django.contrib import messages
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
-from .serializers import EventSerializer, MusicianSerializer, EventOrganizerSerializer, UserCredentialsSerializer
+from .serializers import EventSerializer, MusicianSerializer, EventOrganizerSerializer, UserCredentialsSerializer, EventNameSerializer
 from .models import Event, Musician, EventOrganizer, UserCredentials
-from .forms import EventForm, MusicianForm, EventOrganizerForm
+from rest_framework.views import APIView
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
-from rest_framework.views import APIView
 import pickle
 import os.path
 import uuid
 
 # Event Views
-
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 def authenticate():
@@ -78,69 +71,9 @@ def update_event(service, event_id, event):
 def delete_event(service, event_id):
     service.events().delete(calendarId='primary', eventId=event_id).execute()
 
-class EventListView(ListView):
-    model = Event
-    template_name = 'event_list.html'
-    context_object_name = 'events'
-
-class EventCreateView(CreateView):
-    model = Event
-    form_class = EventForm
-    template_name = 'event_form.html'
-    success_url = reverse_lazy('event_list')
-
-    def form_valid(self, form):
-        event = form.save(commit=False)
-        # Check if the generated google_event_id already exists
-        while True:
-            google_event_id = generate_unique_google_event_id()
-            if not Event.objects.filter(google_event_id=google_event_id).exists():
-                event.google_event_id = google_event_id
-                break
-        event.save()
-        # Create event in Google Calendar
-        service = create_google_service()
-        create_event(service, event)
-        messages.success(self.request, 'Event created successfully.')
-        return super().form_valid(form)
-
-class EventUpdateView(UpdateView):
-    model = Event
-    form_class = EventForm
-    template_name = 'event_form.html'
-    success_url = reverse_lazy('event_list')
-
-    def form_valid(self, form):
-        event = form.save()
-        service = create_google_service()
-        update_event(service, event.google_event_id, event)
-        messages.success(self.request, 'Event updated successfully.')
-        return super().form_valid(form)
-
-class EventDeleteView(DeleteView):
-    model = Event
-    template_name = 'event_delete.html'
-    success_url = reverse_lazy('event_list')
-
-    def delete(self, request, *args, **kwargs):
-        event = self.get_object()
-        service = create_google_service()
-        delete_event(service, event.google_event_id)
-        messages.success(request, 'Event deleted successfully.')
-        return super().delete(request, *args, **kwargs)
-
-def event_detail(request, pk):
-    event = get_object_or_404(Event, pk=pk)
-    return render(request, 'event_detail.html', {'event': event})
-
 class EventListCreateAPIView(generics.ListCreateAPIView):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
-
-    def get(self, request, *args, **kwargs):
-        events = self.get_queryset()
-        serializer = self.get_serializer(events, many=True)
-        return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -153,45 +86,12 @@ class EventRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
 
-    def get(self, request, *args, **kwargs):
-        event = self.get_object()
-        serializer = self.get_serializer(event)
-        return Response(serializer.data)
-
     def delete(self, request, *args, **kwargs):
         instance = self.get_object()
         self.perform_destroy(instance)
         return Response({"message": "Event deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-
-
-# Musician Views
-
-class MusicianListView(ListView):
-    model = Musician
-    template_name = 'musician_list.html'
-    context_object_name = 'musicians'
-
-class MusicianCreateView(CreateView):
-    model = Musician
-    form_class = MusicianForm
-    template_name = 'musician_form.html'
-    success_url = reverse_lazy('musician_list')
     
-class MusicianUpdateView(UpdateView):
-    model = Musician
-    form_class = MusicianForm
-    template_name = 'musician_form.html'
-    success_url = reverse_lazy('musician_list')
-
-class MusicianDeleteView(DeleteView):
-    model = Musician
-    template_name = 'musician_delete.html'
-    success_url = reverse_lazy('musician_list')
-
-class MusicianList(generics.ListAPIView):
-    queryset = Musician.objects.all()
-    serializer_class = MusicianSerializer
-
+# Musician views
 class MusicianListCreateAPIView(generics.ListCreateAPIView):
     queryset = Musician.objects.all()
     serializer_class = MusicianSerializer
@@ -210,51 +110,13 @@ class MusicianListCreateAPIView(generics.ListCreateAPIView):
             except UserCredentials.DoesNotExist:
                 return Response({"error": "Email not found in User Credentials"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
 class MusicianRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Musician.objects.all()
     serializer_class = MusicianSerializer
 
-    def get(self, request, *args, **kwargs):
-        musician = self.get_object()
-        serializer = self.get_serializer(musician)
-        return Response(serializer.data)
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Musician created successfully"}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # Event Organizer Views
-
-class EventOrganizerListView(ListView):
-    model = EventOrganizer
-    template_name = 'event_organizer_list.html'
-    context_object_name = 'event_organizers'
-
-class EventOrganizerCreateView(CreateView):
-    model = EventOrganizer
-    form_class = EventOrganizerForm
-    template_name = 'event_organizer_form.html'
-    success_url = reverse_lazy('event_organizer_list')
-
-class EventOrganizerUpdateView(UpdateView):
-    model = EventOrganizer
-    form_class = EventOrganizerForm
-    template_name = 'event_organizer_form.html'
-    success_url = reverse_lazy('event_organizer_list')
-
-class EventOrganizerDeleteView(DeleteView):
-    model = EventOrganizer
-    template_name = 'event_organizer_delete.html'
-    success_url = reverse_lazy('event_organizer_list')
-
-class EventOrganizerList(generics.ListAPIView):
-    queryset = EventOrganizer.objects.all()
-    serializer_class = EventOrganizerSerializer
-
 class EventOrganizerListCreateAPIView(generics.ListCreateAPIView):
     queryset = EventOrganizer.objects.all()
     serializer_class = EventOrganizerSerializer
@@ -278,17 +140,6 @@ class EventOrganizerRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyA
     queryset = EventOrganizer.objects.all()
     serializer_class = EventOrganizerSerializer
 
-    def get(self, request, *args, **kwargs):
-        event_organizer = self.get_object()
-        serializer = self.get_serializer(event_organizer)
-        return Response(serializer.data)
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response({"message": "Event Organizer created successfully"}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # User Credentials Views
 class UserCredentialsCreateView(generics.CreateAPIView):
@@ -309,8 +160,7 @@ class UserCredentialsCreateView(generics.CreateAPIView):
         else:
             return Response(user_credentials_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# Login API Views
-
+#Login Views
 class UserLoginAPIView(APIView):
     def post(self, request, *args, **kwargs):
         email = request.data.get('email')
@@ -346,3 +196,11 @@ class UserLoginAPIView(APIView):
         except UserCredentials.DoesNotExist:
             # User not found
             return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+# Filter By email Views
+class EventFilterByEmailAPIView(generics.ListAPIView):
+    serializer_class = EventNameSerializer
+
+    def get_queryset(self):
+        email = self.request.query_params.get('email')
+        return Event.objects.filter(event_organiser_email=email)

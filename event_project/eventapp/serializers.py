@@ -2,11 +2,15 @@
 from rest_framework import serializers
 from .models import Event, Musician, EventOrganizer , UserCredentials
 
-
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
         fields = '__all__'
+
+class EventNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Event
+        fields = ['event_name']
 
 class MusicianSerializer(serializers.ModelSerializer):
     class Meta:

@@ -11,10 +11,10 @@ class Event(models.Model):
     event_name = models.CharField(max_length=100)
     location = models.CharField(max_length=100)
     description = models.TextField()
-    created_on = models.DateTimeField(default=timezone.now) # created_on
+    created_on = models.DateTimeField(default=timezone.now) 
     event_start_date = models.DateTimeField()
     event_end_date = models.DateTimeField()
-    event_organiser_email = models.EmailField()
+    event_organiser_email = models.EmailField(unique=True)
     event_organiser_name = models.CharField(max_length=100)
     google_event_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     
