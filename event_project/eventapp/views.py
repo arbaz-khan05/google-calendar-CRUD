@@ -180,7 +180,7 @@ class UserLoginAPIView(APIView):
                         }, status=status.HTTP_200_OK)
                     except Musician.DoesNotExist:
                         return Response({'error': 'Musician not found'}, status=status.HTTP_404_NOT_FOUND)
-                elif user_credentials.category == 'event_organizer':
+                elif user_credentials.category == 'event organizer':
                     try:
                         event_organizer = EventOrganizer.objects.get(email=email)
                         serializer = EventOrganizerSerializer(event_organizer)
